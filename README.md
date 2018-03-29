@@ -1,7 +1,8 @@
 # Python-server---machine-learning-game-AI
-Q learning, python server for a machine learning game AI
 
-This code represents the server aspect of my machine learning game AI. It provides
+Q learning, python server for a machine learning game AI.
+
+This code represents the server aspect of my machine learning game AI, making part of my coursework assignment. It provides
 a way for multiple clients to connect, and train 5 Q matrices simultaneously. 
 
 It establishes a TCP socket connect with the clients, whom transmit state and reward data to the server.
