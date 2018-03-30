@@ -197,12 +197,6 @@ def create_server():
             if sock == SERVER_SOCKET:
                 # Handle the case in which there is a new connection recieved through SERVER_SOCKET
                 sockfd, addr = SERVER_SOCKET.accept()
-
-                if (len(CONNECTION_LIST) == 6):
-                    for count in range(1, 6):
-                        socks = CONNECTION_LIST[1]
-                        socks.close()
-                        CONNECTION_LIST.remove(socks)
             
                 CONNECTION_LIST.append(sockfd)
                 
