@@ -107,7 +107,26 @@ def recieved_score(sock, message, move_qmatrix, action_qmatrix, prev_state_idx):
     recieved_reward(sock, message[1:], move_qmatrix, action_qmatrix, prev_state_idx)
     PREV_SCORE_LIST[get_client_numb(sock)] = score
 
+def received_complete(sock, message, move_qmatrix, action_qmatrix, prev_state_idx):
+    
+    #get the completed action
+    completed_action = str(message[0])
+
+    state = PREV_STATE_LIST[get_client_numb(sock)]
+    if completed_action == "action":
+        action_action = str(RLLogic.choose_action(state, action_qmatrix, NUMB_ACTION_ACTIONS))
+        send_data(sock, "ACTION_ACTION " + action_action)
+        PREV_ACTION_ACTION_LIST[get_client_numb(sock)] = action_action
+    elif completed_action == "move":
+        move_action = str(RLLogic.choose_action(state, move_qmatrix, NUMB_MOVE_ACTIONS))
+        send_data(sock, "MOVE_ACTION " + move_action)
+        PREV_MOVE_ACTION_LIST[get_client_numb(sock)] = move_action
+    else:
+        print("Unknown complete type")
+    return
+
 API_ACCESS= {
+    'COMPLETE' : {"function": received_complete},
     'STATE' : {"function": recieved_state},
     'SCORE' : {"function": recieved_score},
     'REWARD' : {"function": recieved_reward}
@@ -173,7 +192,7 @@ def create_server():
         except select.error:
             print("error occured")
         for sock in read_sockets:
-             
+            
             #New connection
             if sock == SERVER_SOCKET:
                 # Handle the case in which there is a new connection recieved through SERVER_SOCKET
