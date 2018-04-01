@@ -21,10 +21,10 @@ ACTION_QMATRIX_LIST = [RLLogic.generate_empty_qmatrix(NUMB_ACTION_ACTIONS),
                 RLLogic.generate_empty_qmatrix(NUMB_ACTION_ACTIONS)]    # list of Qmatrix
 
 
-PREV_SCORE_LIST = ["", "", "", "", ""]    # list of prevState
-PREV_STATE_LIST = ["", "", "", "", ""]    # list of prevState
-PREV_MOVE_ACTION_LIST = ["", "", "", "", ""]    # list of prevState
-PREV_ACTION_ACTION_LIST = ["", "", "", "", ""]    # list of prevState
+PREV_SCORE_LIST = []    # list of prev Scores
+PREV_STATE_LIST = []    # list of prev States
+PREV_MOVE_ACTION_LIST = []    # list of prev move actions
+PREV_ACTION_ACTION_LIST = []    # list of prev actions (not move actions)
 
 RECV_BUFFER = 10000 
 #socket.setdefaulttimeout(20)
@@ -33,9 +33,12 @@ PORT = 5000
 
 #NOTE: WILL HAVE TO WORK OUT IF LOST OR WON, BECAUSE GOOD GAME DESIGN LULZ
 
-def get_client_numb(sock):
+def get_client_numb(sock, limit=True):
     id = CONNECTION_LIST.index(sock)
-    client_numb = ((id - 1) % 5)
+    if (limit):
+        client_numb = ((id - 1) % 5)
+    else:
+        client_numb = (id - 1)
     return client_numb
 
 def recieved_state(sock, message, move_qmatrix, action_qmatrix, prev_state_idx):
@@ -54,19 +57,19 @@ def recieved_state(sock, message, move_qmatrix, action_qmatrix, prev_state_idx):
     send_data(sock, "MOVE_ACTION " + move_action)
     send_data(sock, "ACTION_ACTION " + action_action)
 
-    PREV_STATE_LIST[get_client_numb(sock)] = state
-    PREV_MOVE_ACTION_LIST[get_client_numb(sock)] = move_action
-    PREV_ACTION_ACTION_LIST[get_client_numb(sock)] = action_action
+    PREV_STATE_LIST[get_client_numb(sock, False)] = state
+    PREV_MOVE_ACTION_LIST[get_client_numb(sock, False)] = move_action
+    PREV_ACTION_ACTION_LIST[get_client_numb(sock, False)] = action_action
 
 def recieved_reward(sock, message, move_qmatrix, action_qmatrix, prev_state_idx):
     #get previous state
-    prev_state = PREV_STATE_LIST[get_client_numb(sock)]
+    prev_state = PREV_STATE_LIST[get_client_numb(sock, False)]
 
     #get this reward
     reward = str(message[0])
 
-    prev_move_action = PREV_MOVE_ACTION_LIST[get_client_numb(sock)]
-    prev_action_action = PREV_ACTION_ACTION_LIST[get_client_numb(sock)]
+    prev_move_action = PREV_MOVE_ACTION_LIST[get_client_numb(sock, False)]
+    prev_action_action = PREV_ACTION_ACTION_LIST[get_client_numb(sock, False)]
     #print(PREV_MOVE_ACTION_LIST)
     #get this state
     next_state = str(message[1:])
@@ -88,13 +91,13 @@ def recieved_reward(sock, message, move_qmatrix, action_qmatrix, prev_state_idx)
 def recieved_score(sock, message, move_qmatrix, action_qmatrix, prev_state_idx):
     #Calculate if score changed - myteam : enemy team
     score = message[0] + " " + message[1]
-    if (score == PREV_SCORE_LIST[get_client_numb(sock)]):
+    if (score == PREV_SCORE_LIST[get_client_numb(sock, False)]):
         return
 
     #if so then calculate the reward (lose or win etc)
-    prev_score = PREV_SCORE_LIST[get_client_numb(sock)].split()
-    if ((PREV_SCORE_LIST[get_client_numb(sock)] == "") or (score == "0 0")):
-        PREV_SCORE_LIST[get_client_numb(sock)] = score
+    prev_score = PREV_SCORE_LIST[get_client_numb(sock, False)].split()
+    if ((PREV_SCORE_LIST[get_client_numb(sock, False)] == "") or (score == "0 0")):
+        PREV_SCORE_LIST[get_client_numb(sock, False)] = score
         return
     reward = 0
     if (score[0] > prev_score[0]): #means I just gained a point
@@ -105,22 +108,22 @@ def recieved_score(sock, message, move_qmatrix, action_qmatrix, prev_state_idx):
     #then train and send new state
     message[1] = str(reward)
     recieved_reward(sock, message[1:], move_qmatrix, action_qmatrix, prev_state_idx)
-    PREV_SCORE_LIST[get_client_numb(sock)] = score
+    PREV_SCORE_LIST[get_client_numb(sock, False)] = score
 
 def received_complete(sock, message, move_qmatrix, action_qmatrix, prev_state_idx):
     
     #get the completed action
     completed_action = str(message[0])
 
-    state = PREV_STATE_LIST[get_client_numb(sock)]
+    state = PREV_STATE_LIST[get_client_numb(sock, False)]
     if completed_action == "action":
         action_action = str(RLLogic.choose_action(state, action_qmatrix, NUMB_ACTION_ACTIONS))
         send_data(sock, "ACTION_ACTION " + action_action)
-        PREV_ACTION_ACTION_LIST[get_client_numb(sock)] = action_action
+        PREV_ACTION_ACTION_LIST[get_client_numb(sock, False)] = action_action
     elif completed_action == "move":
         move_action = str(RLLogic.choose_action(state, move_qmatrix, NUMB_MOVE_ACTIONS))
         send_data(sock, "MOVE_ACTION " + move_action)
-        PREV_MOVE_ACTION_LIST[get_client_numb(sock)] = move_action
+        PREV_MOVE_ACTION_LIST[get_client_numb(sock, False)] = move_action
     else:
         print("Unknown complete type")
     return
@@ -202,6 +205,10 @@ def create_server():
                 
                 print("Client (%s, %s) connected" % addr)
                 send_data(sockfd, "CONNECTED")
+                PREV_SCORE_LIST.append("")
+                PREV_STATE_LIST.append("")
+                PREV_MOVE_ACTION_LIST.append("")
+                PREV_ACTION_ACTION_LIST.append("")
                 #print(CONNECTION_LIST.index(sockfd))
                 
                   
@@ -224,6 +231,10 @@ def create_server():
                     print(e)
                     print("Client (%s, %s) discconected" % addr)
                     sock.close()
+                    del PREV_SCORE_LIST[get_client_numb(sock, False)]
+                    del PREV_STATE_LIST[get_client_numb(sock, False)]
+                    del PREV_MOVE_ACTION_LIST[get_client_numb(sock, False)]
+                    del PREV_ACTION_ACTION_LIST[get_client_numb(sock, False)]
                     CONNECTION_LIST.remove(sock)
                     continue
          
