@@ -41,7 +41,7 @@ def get_client_numb(sock, limit=True):
         client_numb = (id - 1)
     return client_numb
 
-def recieved_state(sock, message, move_qmatrix, action_qmatrix, prev_state_idx):
+def recieved_state(sock, message, move_qmatrix, action_qmatrix):
     state = str(message)
     move_qmatrix = RLLogic.check_state_exist(state, move_qmatrix, NUMB_MOVE_ACTIONS)
     action_qmatrix = RLLogic.check_state_exist(state, action_qmatrix, NUMB_ACTION_ACTIONS)
@@ -61,7 +61,7 @@ def recieved_state(sock, message, move_qmatrix, action_qmatrix, prev_state_idx):
     PREV_MOVE_ACTION_LIST[get_client_numb(sock, False)] = move_action
     PREV_ACTION_ACTION_LIST[get_client_numb(sock, False)] = action_action
 
-def recieved_reward(sock, message, move_qmatrix, action_qmatrix, prev_state_idx):
+def recieved_reward(sock, message, move_qmatrix, action_qmatrix):
     #get previous state
     prev_state = PREV_STATE_LIST[get_client_numb(sock, False)]
 
@@ -86,9 +86,9 @@ def recieved_reward(sock, message, move_qmatrix, action_qmatrix, prev_state_idx)
     ACTION_QMATRIX_LIST[get_client_numb(sock)] = action_qmatrix
 
     #Send next action
-    recieved_state(sock, next_state, move_qmatrix, action_qmatrix, prev_state_idx)
+    recieved_state(sock, next_state, move_qmatrix, action_qmatrix)
+def recieved_score(sock, message, move_qmatrix, action_qmatrix):
 
-def recieved_score(sock, message, move_qmatrix, action_qmatrix, prev_state_idx):
     #Calculate if score changed - myteam : enemy team
     score = message[0] + " " + message[1]
     if (score == PREV_SCORE_LIST[get_client_numb(sock, False)]):
@@ -107,10 +107,10 @@ def recieved_score(sock, message, move_qmatrix, action_qmatrix, prev_state_idx):
 
     #then train and send new state
     message[1] = str(reward)
-    recieved_reward(sock, message[1:], move_qmatrix, action_qmatrix, prev_state_idx)
+    recieved_reward(sock, message[1:], move_qmatrix, action_qmatrix)
     PREV_SCORE_LIST[get_client_numb(sock, False)] = score
 
-def received_complete(sock, message, move_qmatrix, action_qmatrix, prev_state_idx):
+def received_complete(sock, message, move_qmatrix, action_qmatrix):
     
     #get the completed action
     completed_action = str(message[0])
@@ -144,8 +144,7 @@ def send_data(sock, message):
 def intercept_message(sock, message, move_qmatrix, action_qmatrix):
     split_message = message.split()
     if split_message[0] in API_ACCESS:
-        prev_state_idx = get_client_numb(sock)
-        API_ACCESS[split_message[0]]["function"](sock, split_message[1:], move_qmatrix, action_qmatrix, prev_state_idx)
+        API_ACCESS[split_message[0]]["function"](sock, split_message[1:], move_qmatrix, action_qmatrix)
     else:
         send_data(sock, "ERROR API call not found!")
 
@@ -163,7 +162,6 @@ def save_qmatrix():
 
 def load_qmatrix():
     for x in range(0, 5):
-
         filename = str(x) + "_MOVE.pkl"
         MOVE_QMATRIX_LIST[x] = pd.read_pickle(filename)
         print(str(MOVE_QMATRIX_LIST[x]))
