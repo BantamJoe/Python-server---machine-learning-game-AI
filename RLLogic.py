@@ -40,7 +40,7 @@ def learn(state, action, reward, next_state, qmatrix, numb_actions):
 
     qmatrix = check_state_exist(next_state, qmatrix, numb_actions)
     q_predict = qmatrix.loc[state, int(action)]
-    q_target = int(reward) + gamma * qmatrix.loc[next_state, :].max() 
+    q_target = float(reward) + gamma * qmatrix.loc[next_state, :].max() 
     qmatrix.loc[state, int(action)] += learning_rate * (q_target - q_predict)  # update
     return qmatrix
 
