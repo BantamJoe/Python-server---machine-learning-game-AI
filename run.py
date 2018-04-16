@@ -268,24 +268,23 @@ def create_server():
         for sock in read_sockets:
             
             #New connection
-            if sock == SERVER_SOCKET:
-                # Handle the case in which there is a new connection recieved through SERVER_SOCKET
-                sockfd, addr = SERVER_SOCKET.accept()
-            
-                CONNECTION_LIST.append(sockfd)
+            try: 
+                if sock == SERVER_SOCKET:
+                    # Handle the case in which there is a new connection recieved through SERVER_SOCKET
+                    sockfd, addr = SERVER_SOCKET.accept()
                 
-                print("Client (%s, %s) connected" % addr)
-                send_data(sockfd, "CONNECTED")
-                PREV_SCORE_LIST.append("")
-                PREV_STATE_LIST.append("")
-                PREV_MOVE_ACTION_LIST.append("")
-                PREV_ACTION_ACTION_LIST.append("")
-                #print(CONNECTION_LIST.index(sockfd))
-                
-                  
-            #Some incoming message from a client
-            else:
-                try: 
+                    CONNECTION_LIST.append(sockfd)
+                    
+                    print("Client (%s, %s) connected" % addr)
+                    send_data(sockfd, "CONNECTED")
+                    PREV_SCORE_LIST.append("")
+                    PREV_STATE_LIST.append("")
+                    PREV_MOVE_ACTION_LIST.append("")
+                    PREV_ACTION_ACTION_LIST.append("")
+                    #print(CONNECTION_LIST.index(sockfd))
+                                  
+                #Some incoming message from a client
+                else:
                     data = sock.recv(RECV_BUFFER)
                     # echo back the client message
                     if data:
@@ -297,17 +296,17 @@ def create_server():
                             intercept_message(sock, mess, move_qmatrix, action_qmatrix)
                     elif not data:
                         raise select.error
-                        # client disconnected, so remove from socket list
-                except Exception as e:
-                    print(e)
-                    print("Client (%s, %s) discconected" % addr)
-                    sock.close()
-                    del PREV_SCORE_LIST[get_client_numb(sock, False)]
-                    del PREV_STATE_LIST[get_client_numb(sock, False)]
-                    del PREV_MOVE_ACTION_LIST[get_client_numb(sock, False)]
-                    del PREV_ACTION_ACTION_LIST[get_client_numb(sock, False)]
-                    CONNECTION_LIST.remove(sock)
-                    continue
+            # client disconnected, so remove from socket list
+            except Exception as e:
+                print(e)
+                print("Client (%s, %s) discconected" % addr)
+                sock.close()
+                del PREV_SCORE_LIST[get_client_numb(sock, False)]
+                del PREV_STATE_LIST[get_client_numb(sock, False)]
+                del PREV_MOVE_ACTION_LIST[get_client_numb(sock, False)]
+                del PREV_ACTION_ACTION_LIST[get_client_numb(sock, False)]
+                CONNECTION_LIST.remove(sock)
+                continue
          
     SERVER_SOCKET.close()
 
