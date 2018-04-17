@@ -2,7 +2,8 @@ import numpy as np
 import pandas as pd
 
 
-learning_rate = 0.01
+start_learning_rate = 1.00
+min_learning_rate = 0.02
 gamma = 0.9
 epsilon = 0.9
 
@@ -15,18 +16,17 @@ def choose_action(state, qmatrix, numb_actions):
     """
 
     qmatrix = check_state_exist(state, qmatrix, numb_actions)
-    # action selection
     if np.random.uniform() < epsilon:
-        # choose best action
+        # choose best action from qmatrix
         state_action = qmatrix.loc[state, :]
         state_action = state_action.reindex(np.random.permutation(state_action.index))     # some actions have same value
         action = state_action.idxmax()
     else:
-        # choose random action
+        # choose random action from qmatrix
         action = np.random.choice(list(range(numb_actions))) 
     return action
 
-def learn(state, action, reward, next_state, qmatrix, numb_actions):
+def learn(state, action, reward, next_state, qmatrix, numb_actions, numb_rounds):
     """Trains the Qmatrix based on reward, and the previous state done etc
 
     Keyword arguments:
@@ -37,10 +37,19 @@ def learn(state, action, reward, next_state, qmatrix, numb_actions):
     qmatrix -- the qmatrix where the training will be stored
     numb_actions -- the number of possible actions that can be done
     """
-
+    qmatrix = check_state_exist(state, qmatrix, numb_actions)
     qmatrix = check_state_exist(next_state, qmatrix, numb_actions)
     q_predict = qmatrix.loc[state, int(action)]
-    q_target = float(reward) + gamma * qmatrix.loc[next_state, :].max() 
+    q_target = float(reward) + gamma * qmatrix.loc[next_state, :].max()
+
+    #Allow decay of learning rate as more is learnt
+    learning_rate_decay = (numb_rounds/10.0)
+    if learning_rate_decay == 0:
+        learning_rate_decay = 1
+    learning_rate = start_learning_rate / learning_rate_decay
+    if learning_rate < min_learning_rate:
+        learning_rate = min_learning_rate
+    
     qmatrix.loc[state, int(action)] += learning_rate * (q_target - q_predict)  # update
     return qmatrix
 

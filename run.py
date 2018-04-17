@@ -1,3 +1,9 @@
+'''
+
+NOTE: The networking aspect of this code was from my Final Year Project, unit CM30082.
+
+'''
+
 import socket, select
 import pandas as pd
 import numpy as np
@@ -25,6 +31,7 @@ PREV_SCORE_LIST = []    # list of prev Scores
 PREV_STATE_LIST = []    # list of prev States
 PREV_MOVE_ACTION_LIST = []    # list of prev move actions
 PREV_ACTION_ACTION_LIST = []    # list of prev actions (not move actions)
+NUM_ROUND_LIST = [0, 0, 0, 0, 0]    # list of prev actions (not move actions)
 
 RECV_BUFFER = 10000 
 #socket.setdefaulttimeout(20)
@@ -106,10 +113,10 @@ def recieved_reward(sock, message, move_qmatrix, action_qmatrix):
     move_qmatrix = RLLogic.check_state_exist(next_state, move_qmatrix, NUMB_MOVE_ACTIONS)
     
     action_qmatrix = RLLogic.check_state_exist(next_state, action_qmatrix, NUMB_ACTION_ACTIONS)
-    move_qmatrix = RLLogic.learn(prev_state, prev_move_action, reward, next_state, move_qmatrix, NUMB_MOVE_ACTIONS)
+    move_qmatrix = RLLogic.learn(prev_state, prev_move_action, reward, next_state, move_qmatrix, NUMB_MOVE_ACTIONS, NUM_ROUND_LIST[get_client_numb(sock)])
     MOVE_QMATRIX_LIST[get_client_numb(sock)] = move_qmatrix
 
-    action_qmatrix = RLLogic.learn(prev_state, prev_action_action, reward, next_state, action_qmatrix, NUMB_ACTION_ACTIONS)
+    action_qmatrix = RLLogic.learn(prev_state, prev_action_action, reward, next_state, action_qmatrix, NUMB_ACTION_ACTIONS, NUM_ROUND_LIST[get_client_numb(sock)])
     ACTION_QMATRIX_LIST[get_client_numb(sock)] = action_qmatrix
 
     #Send next action
@@ -281,6 +288,7 @@ def create_server():
                     PREV_STATE_LIST.append("")
                     PREV_MOVE_ACTION_LIST.append("")
                     PREV_ACTION_ACTION_LIST.append("")
+                    NUM_ROUND_LIST[get_client_numb(sock)]+= 1;
                     #print(CONNECTION_LIST.index(sockfd))
                                   
                 #Some incoming message from a client
